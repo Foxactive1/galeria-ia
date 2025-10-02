@@ -1,0 +1,1519 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galeria Virtual AI Art</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary-color: #6c63ff;
+            --secondary-color: #4a44b5;
+            --dark-color: #1a1a2e;
+            --light-color: #f8f9fa;
+        }
+        
+        body {
+            background-color: #f5f5f7;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            background-color: var(--dark-color);
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 100px 0;
+            margin-bottom: 50px;
+        }
+        
+        .art-card {
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: none;
+            overflow: hidden;
+            height: 100%;
+        }
+        
+        .art-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .art-image {
+            height: 250px;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        
+        .price-tag {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .footer {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 40px 0;
+            margin-top: 50px;
+        }
+        
+        .console-output {
+            height: 300px;
+            overflow-y: auto;
+            background: #1a1a2e;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .gallery-container {
+            background-color: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        
+        .subscription-card {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.3s;
+            height: 100%;
+        }
+        
+        .subscription-card:hover {
+            border-color: var(--primary-color);
+            transform: scale(1.03);
+        }
+        
+        .subscription-card.featured {
+            border-color: var(--primary-color);
+            position: relative;
+        }
+        
+        .featured-badge {
+            position: absolute;
+            top: -10px;
+            right: 20px;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        
+        .admin-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            margin-top: 30px;
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .admin-table {
+            font-size: 0.9rem;
+        }
+        
+        .status-published {
+            background-color: #28a745;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+        }
+        
+        .status-draft {
+            background-color: #6c757d;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+        }
+        
+        .user-badge {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+        }
+        
+        .prompt-modal .modal-body {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+        }
+        
+        .prompt-text {
+            font-family: 'Courier New', monospace;
+            background-color: #1a1a2e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-palette me-2"></i>
+                AI Art Gallery
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">Início</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#gallery">Galeria</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#subscription">Assinatura</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showAdminPanel()">Admin</a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center" id="auth-buttons">
+                    <span class="navbar-text me-3" id="connection-status">
+                        <i class="fas fa-circle text-danger"></i> Não conectado
+                    </span>
+                    <button class="btn btn-outline-light me-2" data-bs-toggle="modal" data-bs-target="#loginModal">
+                        <i class="fas fa-sign-in-alt me-1"></i> Entrar
+                    </button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#registerModal">
+                        <i class="fas fa-user-plus me-1"></i> Cadastrar
+                    </button>
+                </div>
+                <div class="d-flex align-items-center" id="user-menu" style="display: none !important;">
+                    <span class="navbar-text me-3">
+                        <i class="fas fa-circle text-success"></i> Conectado
+                    </span>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i> <span id="user-name">Usuário</span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="showUserProfile()"><i class="fas fa-id-card me-2"></i>Meu Perfil</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="showUserArtworks()"><i class="fas fa-images me-2"></i>Minhas Obras</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i>Sair</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section text-center">
+        <div class="container">
+            <h1 class="display-4 fw-bold mb-4">Galeria Virtual de Artes com IA</h1>
+            <p class="lead mb-4">Explore obras únicas criadas por inteligência artificial em uma experiência imersiva</p>
+            <div class="d-flex justify-content-center flex-wrap gap-3">
+                <button class="btn btn-light btn-lg" onclick="loadArtworks()">
+                    <i class="fas fa-eye me-2"></i> Ver Galeria
+                </button>
+                <button class="btn btn-outline-light btn-lg" data-bs-toggle="modal" data-bs-target="#subscriptionModal">
+                    <i class="fas fa-crown me-2"></i> Assinar Agora
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gallery Section -->
+    <section id="gallery" class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold">Obras em Destaque</h2>
+                <p class="text-muted">Descubra criações únicas geradas por inteligência artificial</p>
+            </div>
+            
+            <div class="gallery-container">
+                <div class="row g-4" id="artworks-container">
+                    <div class="col-12 text-center">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Clique em "Ver Galeria" para carregar as obras
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Admin Panel (Hidden by default) -->
+    <section id="admin-section" class="py-5" style="display: none;">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold">Painel Administrativo</h2>
+                <p class="text-muted">Gerencie obras, usuários e configurações do sistema</p>
+            </div>
+            
+            <div class="admin-panel">
+                <div class="row mb-4">
+                    <div class="col-md-3 mb-3">
+                        <div class="stats-card">
+                            <h3 id="total-artworks">0</h3>
+                            <p>Obras Cadastradas</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="stats-card">
+                            <h3 id="total-users">0</h3>
+                            <p>Usuários</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="stats-card">
+                            <h3 id="published-artworks">0</h3>
+                            <p>Obras Publicadas</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="stats-card">
+                            <h3 id="total-views">0</h3>
+                            <p>Visualizações</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between mb-3">
+                    <h4>Gerenciar Obras</h4>
+                    <button class="btn btn-primary" onclick="showAddArtworkModal()">
+                        <i class="fas fa-plus me-1"></i> Nova Obra
+                    </button>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-striped admin-table">
+                        <thead>
+                            <tr>
+                                <th>Título</th>
+                                <th>Modelo IA</th>
+                                <th>Status</th>
+                                <th>Visualizações</th>
+                                <th>Curtidas</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-artworks-table">
+                            <!-- Conteúdo preenchido via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Subscription Section -->
+    <section id="subscription" class="py-5 bg-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold">Planos de Acesso</h2>
+                <p class="text-muted">Escolha o plano que melhor se adapta às suas necessidades</p>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="subscription-card text-center">
+                        <h4>Básico</h4>
+                        <div class="my-4">
+                            <span class="h2 fw-bold">R$ 1</span>
+                            <span class="text-muted">/acesso</span>
+                        </div>
+                        <ul class="list-unstyled mb-4">
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Acesso a 5 obras</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Visualização em baixa resolução</li>
+                            <li class="mb-2"><i class="fas fa-times text-muted me-2"></i> Download das obras</li>
+                            <li class="mb-2"><i class="fas fa-times text-muted me-2"></i> Acesso a obras exclusivas</li>
+                        </ul>
+                        <button class="btn btn-outline-primary w-100">Selecionar</button>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="subscription-card text-center featured">
+                        <div class="featured-badge">Mais Popular</div>
+                        <h4>Premium</h4>
+                        <div class="my-4">
+                            <span class="h2 fw-bold">R$ 9,90</span>
+                            <span class="text-muted">/mês</span>
+                        </div>
+                        <ul class="list-unstyled mb-4">
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Acesso ilimitado</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Visualização em alta resolução</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Download de 10 obras/mês</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Acesso a obras exclusivas</li>
+                        </ul>
+                        <button class="btn btn-primary w-100">Selecionar</button>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="subscription-card text-center">
+                        <h4>Colecionador</h4>
+                        <div class="my-4">
+                            <span class="h2 fw-bold">R$ 29,90</span>
+                            <span class="text-muted">/mês</span>
+                        </div>
+                        <ul class="list-unstyled mb-4">
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Todos os benefícios Premium</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Download ilimitado</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Acesso antecipado a novas coleções</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Suporte prioritário</li>
+                        </ul>
+                        <button class="btn btn-outline-primary w-100">Selecionar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Console de Desenvolvimento -->
+    <div class="container mt-5">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-terminal me-2"></i>Console de Desenvolvimento
+                </h5>
+                <div>
+                    <button class="btn btn-sm btn-primary me-2" onclick="testConnection()">
+                        <i class="fas fa-plug me-1"></i>Testar Conexão
+                    </button>
+                    <button class="btn btn-sm btn-success me-2" onclick="setupDatabase()">
+                        <i class="fas fa-database me-1"></i>Criar Tabelas
+                    </button>
+                    <button class="btn btn-sm btn-warning me-2" onclick="showAdminPanel()">
+                        <i class="fas fa-cog me-1"></i>Painel Admin
+                    </button>
+                    <button class="btn btn-sm btn-secondary" onclick="clearConsole()">
+                        <i class="fas fa-broom me-1"></i>Limpar
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="console-output" class="console-output">
+                    <div>> Sistema inicializado. Aguardando configuração...</div>
+                </div>
+                
+                <div class="mt-3">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Status do Sistema:</h6>
+                            <div id="system-status" class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Sistema não configurado
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Ações Rápidas:</h6>
+                            <div class="d-grid gap-2 d-md-flex">
+                                <button class="btn btn-sm btn-outline-primary" onclick="loadArtworks()">
+                                    <i class="fas fa-image me-1"></i>Carregar Obras
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" onclick="createSampleData()">
+                                    <i class="fas fa-plus me-1"></i>Dados Exemplo
+                                </button>
+                                <button class="btn btn-sm btn-outline-info" onclick="loadAdminStats()">
+                                    <i class="fas fa-chart-bar me-1"></i>Estatísticas
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6 mb-4 mb-md-0">
+                    <h5><i class="fas fa-palette me-2"></i> AI Art Gallery</h5>
+                    <p>Explorando o futuro da criação artística através da inteligência artificial.</p>
+                    <div class="d-flex gap-3">
+                        <a href="#" class="text-white"><i class="fab fa-instagram fa-lg"></i></a>
+                        <a href="#" class="text-white"><i class="fab fa-tiktok fa-lg"></i></a>
+                        <a href="#" class="text-white"><i class="fab fa-twitter fa-lg"></i></a>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4 mb-md-0">
+                    <h5>Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-white-50 text-decoration-none">Início</a></li>
+                        <li><a href="#gallery" class="text-white-50 text-decoration-none">Galeria</a></li>
+                        <li><a href="#subscription" class="text-white-50 text-decoration-none">Assinatura</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5>Contato</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-envelope me-2"></i> contato@aiartgallery.com</li>
+                        <li><i class="fas fa-map-marker-alt me-2"></i> São Paulo, Brasil</li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="text-center">
+                <p class="mb-0">&copy; 2023 AI Art Gallery. Desenvolvido com Supabase.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modals -->
+    <div class="modal fade" id="loginModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Entrar na Conta</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="loginEmail" class="form-label">E-mail</label>
+                            <input type="email" class="form-control" id="loginEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="loginPassword" class="form-label">Senha</label>
+                            <input type="password" class="form-control" id="loginPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Entrar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="registerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Criar Conta</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="registerForm">
+                        <div class="mb-3">
+                            <label for="registerName" class="form-label">Nome Completo</label>
+                            <input type="text" class="form-control" id="registerName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerEmail" class="form-label">E-mail</label>
+                            <input type="email" class="form-control" id="registerEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerPassword" class="form-label">Senha</label>
+                            <input type="password" class="form-control" id="registerPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Cadastrar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="subscriptionModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Escolha seu Plano</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="subscription-card text-center h-100">
+                                <h4>Básico</h4>
+                                <div class="my-4">
+                                    <span class="h2 fw-bold">R$ 1</span>
+                                    <span class="text-muted">/acesso</span>
+                                </div>
+                                <ul class="list-unstyled mb-4">
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Acesso a 5 obras</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Visualização em baixa resolução</li>
+                                    <li class="mb-2"><i class="fas fa-times text-muted me-2"></i> Download das obras</li>
+                                </ul>
+                                <button class="btn btn-outline-primary w-100">Selecionar</button>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="subscription-card text-center featured h-100">
+                                <div class="featured-badge">Popular</div>
+                                <h4>Premium</h4>
+                                <div class="my-4">
+                                    <span class="h2 fw-bold">R$ 9,90</span>
+                                    <span class="text-muted">/mês</span>
+                                </div>
+                                <ul class="list-unstyled mb-4">
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Acesso ilimitado</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Visualização em alta resolução</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Download de 10 obras/mês</li>
+                                </ul>
+                                <button class="btn btn-primary w-100">Selecionar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Adicionar/Editar Obra -->
+    <div class="modal fade" id="artworkModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="artworkModalTitle">Adicionar Nova Obra</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="artworkForm">
+                        <input type="hidden" id="artworkId">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="artworkTitle" class="form-label">Título</label>
+                                    <input type="text" class="form-control" id="artworkTitle" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="artworkDescription" class="form-label">Descrição</label>
+                                    <textarea class="form-control" id="artworkDescription" rows="3"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="artworkImageUrl" class="form-label">URL da Imagem</label>
+                                    <input type="url" class="form-control" id="artworkImageUrl" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="artworkAiModel" class="form-label">Modelo de IA</label>
+                                    <select class="form-select" id="artworkAiModel">
+                                        <option value="stable-diffusion">Stable Diffusion</option>
+                                        <option value="dall-e">DALL-E</option>
+                                        <option value="midjourney">Midjourney</option>
+                                        <option value="other">Outro</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="artworkPrompt" class="form-label">Prompt</label>
+                                    <textarea class="form-control" id="artworkPrompt" rows="2"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="artworkAccessTier" class="form-label">Nível de Acesso</label>
+                                    <select class="form-select" id="artworkAccessTier">
+                                        <option value="free">Grátis</option>
+                                        <option value="premium">Premium</option>
+                                        <option value="collector">Colecionador</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="artworkPrice" class="form-label">Preço por Visualização (R$)</label>
+                                    <input type="number" step="0.01" class="form-control" id="artworkPrice" value="1.00">
+                                </div>
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="artworkPublished">
+                                    <label class="form-check-label" for="artworkPublished">Publicada</label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="saveArtwork()">Salvar Obra</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para visualizar o Prompt -->
+    <div class="modal fade prompt-modal" id="promptModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="promptModalTitle">Prompt da Obra</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>Prompt utilizado para gerar esta imagem:</h6>
+                    <div class="prompt-text" id="promptText">
+                        <!-- O prompt será inserido aqui via JavaScript -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 🔐 CONFIGURAÇÃO DO SUPABASE - Credenciais atualizadas
+        const SUPABASE_URL = 'https://orahuqigxxqymnwjqgyc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yYWh1cWlneHhxeW1ud2pxZ3ljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5NzcxNDcsImV4cCI6MjA3NDU1MzE0N30.EtioHlH6mpdzAGhCSGBY5BGCxtpFP8ddBb5in_h88L0';
+        
+        // Inicializar Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Variáveis globais
+        let currentUser = null;
+        let artworks = [];
+
+        // Função para log no console visual
+        function log(message, type = 'info') {
+            const consoleEl = document.getElementById('console-output');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            
+            let icon = '🔹';
+            if (type === 'error') {
+                icon = '❌';
+                logEntry.className = 'text-danger';
+            } else if (type === 'success') {
+                icon = '✅';
+                logEntry.className = 'text-success';
+            } else if (type === 'warning') {
+                icon = '⚠️';
+                logEntry.className = 'text-warning';
+            }
+            
+            logEntry.innerHTML = `<span class="text-muted">[${timestamp}]</span> ${icon} ${message}`;
+            consoleEl.appendChild(logEntry);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        // Limpar console
+        function clearConsole() {
+            document.getElementById('console-output').innerHTML = '<div>> Console limpo</div>';
+        }
+
+        // Atualizar status da conexão
+        function updateConnectionStatus(connected, message = '') {
+            const statusEl = document.getElementById('connection-status');
+            if (connected) {
+                statusEl.innerHTML = '<i class="fas fa-circle text-success"></i> Conectado';
+                statusEl.className = 'navbar-text text-success';
+            } else {
+                statusEl.innerHTML = `<i class="fas fa-circle text-danger"></i> ${message || 'Não conectado'}`;
+                statusEl.className = 'navbar-text text-danger';
+            }
+        }
+
+        // Atualizar status do sistema
+        function updateSystemStatus(message, type = 'warning') {
+            const statusEl = document.getElementById('system-status');
+            statusEl.innerHTML = message;
+            statusEl.className = `alert alert-${type}`;
+        }
+
+        // Testar conexão com Supabase
+        async function testConnection() {
+            log('Testando conexão com Supabase...', 'info');
+            updateConnectionStatus(false, 'Testando...');
+            
+            try {
+                const { data, error } = await supabase.from('artworks').select('count').limit(1);
+                
+                if (error) {
+                    if (error.message.includes('does not exist')) {
+                        log('Tabela artworks não encontrada. Use "Criar Tabelas" para configurar o banco.', 'warning');
+                        updateConnectionStatus(false, 'Tabelas não criadas');
+                        updateSystemStatus(
+                            '<i class="fas fa-database me-2"></i>Banco não configurado. Clique em "Criar Tabelas"',
+                            'danger'
+                        );
+                    } else {
+                        log(`Erro de conexão: ${error.message}`, 'error');
+                        updateConnectionStatus(false, 'Erro de conexão');
+                    }
+                } else {
+                    log('✅ Conexão com Supabase estabelecida com sucesso!', 'success');
+                    updateConnectionStatus(true);
+                    updateSystemStatus(
+                        '<i class="fas fa-check-circle me-2"></i>Sistema conectado e funcionando',
+                        'success'
+                    );
+                    await checkDatabaseStructure();
+                }
+            } catch (err) {
+                log(`Erro: ${err.message}`, 'error');
+                updateConnectionStatus(false, 'Erro geral');
+            }
+        }
+
+        // Configurar banco de dados
+        async function setupDatabase() {
+            log('Iniciando configuração do banco de dados...', 'info');
+            
+            try {
+                // Criar tabela de usuários
+                const { error: usersError } = await supabase.rpc('exec_sql', {
+                    sql: `
+                        CREATE TABLE IF NOT EXISTS users (
+                            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                            email VARCHAR(255) UNIQUE NOT NULL,
+                            full_name VARCHAR(255) NOT NULL,
+                            user_type VARCHAR(50) DEFAULT 'viewer',
+                            subscription_tier VARCHAR(50) DEFAULT 'free',
+                            created_at TIMESTAMPTZ DEFAULT NOW(),
+                            updated_at TIMESTAMPTZ DEFAULT NOW()
+                        );
+                    `
+                });
+
+                if (usersError) {
+                    // Se RPC não funcionar, tentar via SQL direct (pode não funcionar no client)
+                    log('Método RPC não disponível. Execute o SQL manualmente no Supabase.', 'warning');
+                    showManualSQLInstructions();
+                    return;
+                }
+
+                // Criar tabela de artworks
+                const { error: artworksError } = await supabase.rpc('exec_sql', {
+                    sql: `
+                        CREATE TABLE IF NOT EXISTS artworks (
+                            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                            title VARCHAR(255) NOT NULL,
+                            description TEXT,
+                            artist_id UUID REFERENCES users(id),
+                            image_url TEXT NOT NULL,
+                            ai_model VARCHAR(100),
+                            ai_prompt TEXT,
+                            access_tier VARCHAR(50) DEFAULT 'free',
+                            price_per_view DECIMAL(5,2) DEFAULT 1.00,
+                            status VARCHAR(50) DEFAULT 'draft',
+                            view_count INTEGER DEFAULT 0,
+                            like_count INTEGER DEFAULT 0,
+                            created_at TIMESTAMPTZ DEFAULT NOW(),
+                            updated_at TIMESTAMPTZ DEFAULT NOW()
+                        );
+                    `
+                });
+
+                log('✅ Tabelas criadas com sucesso!', 'success');
+                await createSampleData();
+
+            } catch (err) {
+                log(`Erro na configuração: ${err.message}`, 'error');
+                showManualSQLInstructions();
+            }
+        }
+
+        // Mostrar instruções SQL manuais
+        function showManualSQLInstructions() {
+            log('📋 Execute este SQL no Supabase (SQL Editor):', 'info');
+            log(`CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    full_name VARCHAR(255) NOT NULL,
+    user_type VARCHAR(50) DEFAULT 'viewer',
+    subscription_tier VARCHAR(50) DEFAULT 'free',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS artworks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    artist_id UUID REFERENCES users(id),
+    image_url TEXT NOT NULL,
+    ai_model VARCHAR(100),
+    ai_prompt TEXT,
+    access_tier VARCHAR(50) DEFAULT 'free',
+    price_per_view DECIMAL(5,2) DEFAULT 1.00,
+    status VARCHAR(50) DEFAULT 'draft',
+    view_count INTEGER DEFAULT 0,
+    like_count INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+INSERT INTO users (email, full_name, user_type) VALUES 
+('artista@exemplo.com', 'Artista IA', 'artist'),
+('colecionador@exemplo.com', 'Colecionador Digital', 'collector');
+
+INSERT INTO artworks (title, description, artist_id, image_url, ai_model, status) VALUES 
+('Cidade Futurista', 'Uma visão de uma metrópole do futuro com arquitetura avançada', 
+ (SELECT id FROM users WHERE email = 'artista@exemplo.com'),
+ 'https://images.unsplash.com/photo-1487958449943-2429e8be8625?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+ 'stable-diffusion', 'published'),
+ 
+('Floresta Encantada', 'Paisagem mágica de uma floresta com criaturas mitológicas', 
+ (SELECT id FROM users WHERE email = 'artista@exemplo.com'),
+ 'https://images.unsplash.com/photo-1448375240586-882707db888b?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+ 'dall-e', 'published');`, 'info');
+        }
+
+        // Criar dados de exemplo
+        async function createSampleData() {
+            log('Criando dados de exemplo...', 'info');
+            
+            try {
+                // Verificar se já existem usuários
+                const { data: existingUsers, error: usersError } = await supabase
+                    .from('users')
+                    .select('id')
+                    .limit(1);
+
+                if (usersError || !existingUsers || existingUsers.length === 0) {
+                    // Criar usuário de exemplo
+                    const { data: newUser, error: userError } = await supabase
+                        .from('users')
+                        .insert([
+                            {
+                                email: 'artista@exemplo.com',
+                                full_name: 'Artista IA',
+                                user_type: 'artist'
+                            }
+                        ])
+                        .select()
+                        .single();
+
+                    if (userError) {
+                        log(`Erro ao criar usuário: ${userError.message}`, 'error');
+                        return;
+                    }
+                    
+                    log('✅ Usuário artista criado com sucesso', 'success');
+                    
+                    // Criar obras de exemplo
+                    const sampleArtworks = [
+                        {
+                            title: 'Cidade Futurista',
+                            description: 'Uma visão de uma metrópole do futuro com arquitetura avançada e veículos voadores',
+                            artist_id: newUser.id,
+                            image_url: 'https://images.unsplash.com/photo-1487958449943-2429e8be8625?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+                            ai_model: 'stable-diffusion',
+                            ai_prompt: 'futuristic city with flying cars, neon lights, cyberpunk style, highly detailed, 4k resolution',
+                            access_tier: 'premium',
+                            price_per_view: 1.50,
+                            status: 'published'
+                        },
+                        {
+                            title: 'Floresta Encantada',
+                            description: 'Paisagem mágica de uma floresta com criaturas mitológicas e luzes etéreas',
+                            artist_id: newUser.id,
+                            image_url: 'https://images.unsplash.com/photo-1448375240586-882707db888b?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+                            ai_model: 'dall-e',
+                            ai_prompt: 'magical forest with mythical creatures, ethereal lights, fantasy art, vibrant colors, mystical atmosphere',
+                            access_tier: 'free',
+                            status: 'published'
+                        },
+                        {
+                            title: 'Abstração Cósmica',
+                            description: 'Representação abstrata do cosmos com nebulosas, estrelas e galáxias distantes',
+                            artist_id: newUser.id,
+                            image_url: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+                            ai_model: 'midjourney',
+                            ai_prompt: 'cosmic abstraction, nebulae, stars, galaxies, vibrant colors, space art, digital painting',
+                            access_tier: 'premium',
+                            price_per_view: 2.00,
+                            status: 'published'
+                        }
+                    ];
+
+                    const { error: artworksError } = await supabase
+                        .from('artworks')
+                        .insert(sampleArtworks);
+
+                    if (artworksError) {
+                        log(`Erro ao criar obras: ${artworksError.message}`, 'error');
+                    } else {
+                        log('✅ 3 obras de exemplo criadas com sucesso!', 'success');
+                    }
+                } else {
+                    log('✅ Dados de exemplo já existem', 'success');
+                }
+
+                // Recarregar a galeria
+                await loadArtworks();
+
+            } catch (err) {
+                log(`Erro ao criar dados: ${err.message}`, 'error');
+            }
+        }
+
+        // Verificar estrutura do banco
+        async function checkDatabaseStructure() {
+            const { count, error } = await supabase
+                .from('artworks')
+                .select('*', { count: 'exact', head: true });
+            
+            if (!error) {
+                log(`📊 Banco configurado: ${count} obras encontradas`, 'success');
+            }
+        }
+
+        // Carregar obras de arte
+        async function loadArtworks() {
+            log('Carregando obras de arte...', 'info');
+            
+            try {
+                const { data: artworks, error } = await supabase
+                    .from('artworks')
+                    .select(`
+                        *,
+                        users:artist_id (full_name, email)
+                    `)
+                    .eq('status', 'published')
+                    .order('created_at', { ascending: false })
+                    .limit(6);
+
+                if (error) {
+                    log(`Erro ao carregar obras: ${error.message}`, 'error');
+                    return;
+                }
+
+                const container = document.getElementById('artworks-container');
+                
+                if (!artworks || artworks.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-12 text-center">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Nenhuma obra publicada encontrada.
+                                <button class="btn btn-sm btn-warning ms-2" onclick="createSampleData()">
+                                    Criar Dados Exemplo
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = '';
+                
+                artworks.forEach(artwork => {
+                    const col = document.createElement('div');
+                    col.className = 'col-md-6 col-lg-4';
+                    
+                    col.innerHTML = `
+                        <div class="card art-card h-100">
+                            <img src="${artwork.image_url}" 
+                                 class="card-img-top art-image" 
+                                 alt="${artwork.title}"
+                                 onclick="showPrompt('${artwork.id}')"
+                                 onerror="this.src='https://images.unsplash.com/photo-1487958449943-2429e8be8625?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80'">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title">${artwork.title}</h5>
+                                <p class="card-text flex-grow-1">${artwork.description || 'Sem descrição'}</p>
+                                <div class="d-flex justify-content-between align-items-center mt-auto">
+                                    <span class="price-tag">${artwork.price_per_view ? 'R$ ' + artwork.price_per_view : 'Grátis'}</span>
+                                    <small class="text-muted">
+                                        <i class="fas fa-robot me-1"></i>${artwork.ai_model || 'IA'}
+                                    </small>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-eye me-1"></i>${artwork.view_count || 0} views
+                                        <i class="fas fa-heart ms-2 me-1"></i>${artwork.like_count || 0} likes
+                                    </small>
+                                </div>
+                                <div class="mt-2">
+                                    <button class="btn btn-sm btn-outline-primary w-100" onclick="showPrompt('${artwork.id}')">
+                                        <i class="fas fa-code me-1"></i> Ver Prompt
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    container.appendChild(col);
+                });
+
+                log(`✅ ${artworks.length} obras carregadas com sucesso!`, 'success');
+            } catch (err) {
+                log(`Erro: ${err.message}`, 'error');
+            }
+        }
+
+        // Mostrar prompt da obra
+        async function showPrompt(artworkId) {
+            try {
+                const { data: artwork, error } = await supabase
+                    .from('artworks')
+                    .select('*')
+                    .eq('id', artworkId)
+                    .single();
+
+                if (error) {
+                    log(`Erro ao carregar prompt: ${error.message}`, 'error');
+                    return;
+                }
+
+                document.getElementById('promptModalTitle').textContent = `Prompt: ${artwork.title}`;
+                document.getElementById('promptText').textContent = artwork.ai_prompt || 'Nenhum prompt disponível para esta obra.';
+
+                const promptModal = new bootstrap.Modal(document.getElementById('promptModal'));
+                promptModal.show();
+            } catch (err) {
+                log(`Erro ao mostrar prompt: ${err.message}`, 'error');
+            }
+        }
+
+        // Mostrar painel administrativo
+        function showAdminPanel() {
+            const adminSection = document.getElementById('admin-section');
+            adminSection.style.display = 'block';
+            
+            // Scroll para a seção admin
+            adminSection.scrollIntoView({ behavior: 'smooth' });
+            
+            // Carregar estatísticas e obras para administração
+            loadAdminStats();
+            loadAdminArtworks();
+        }
+
+        // Carregar estatísticas do painel admin
+        async function loadAdminStats() {
+            try {
+                // Total de obras
+                const { count: totalArtworks, error: artworksError } = await supabase
+                    .from('artworks')
+                    .select('*', { count: 'exact', head: true });
+                
+                // Obras publicadas
+                const { count: publishedArtworks, error: publishedError } = await supabase
+                    .from('artworks')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'published');
+                
+                // Total de visualizações
+                const { data: viewsData, error: viewsError } = await supabase
+                    .from('artworks')
+                    .select('view_count');
+                
+                // Total de usuários
+                const { count: totalUsers, error: usersError } = await supabase
+                    .from('users')
+                    .select('*', { count: 'exact', head: true });
+                
+                if (!artworksError) {
+                    document.getElementById('total-artworks').textContent = totalArtworks || 0;
+                }
+                
+                if (!publishedError) {
+                    document.getElementById('published-artworks').textContent = publishedArtworks || 0;
+                }
+                
+                if (!viewsError && viewsData) {
+                    const totalViews = viewsData.reduce((sum, artwork) => sum + (artwork.view_count || 0), 0);
+                    document.getElementById('total-views').textContent = totalViews;
+                }
+                
+                if (!usersError) {
+                    document.getElementById('total-users').textContent = totalUsers || 0;
+                }
+                
+                log('✅ Estatísticas administrativas carregadas', 'success');
+            } catch (err) {
+                log(`Erro ao carregar estatísticas: ${err.message}`, 'error');
+            }
+        }
+
+        // Carregar obras para administração
+        async function loadAdminArtworks() {
+            try {
+                const { data: artworks, error } = await supabase
+                    .from('artworks')
+                    .select(`
+                        *,
+                        users:artist_id (full_name)
+                    `)
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    log(`Erro ao carregar obras para administração: ${error.message}`, 'error');
+                    return;
+                }
+
+                artworks = artworks || [];
+                const tableBody = document.getElementById('admin-artworks-table');
+                tableBody.innerHTML = '';
+
+                if (artworks.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="text-center">Nenhuma obra encontrada</td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                artworks.forEach(artwork => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${artwork.title}</td>
+                        <td>${artwork.ai_model || 'N/A'}</td>
+                        <td>
+                            <span class="${artwork.status === 'published' ? 'status-published' : 'status-draft'}">
+                                ${artwork.status === 'published' ? 'Publicada' : 'Rascunho'}
+                            </span>
+                        </td>
+                        <td>${artwork.view_count || 0}</td>
+                        <td>${artwork.like_count || 0}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="editArtwork('${artwork.id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteArtwork('${artwork.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                log(`✅ ${artworks.length} obras carregadas para administração`, 'success');
+            } catch (err) {
+                log(`Erro ao carregar obras administrativas: ${err.message}`, 'error');
+            }
+        }
+
+        // Mostrar modal para adicionar obra
+        function showAddArtworkModal() {
+            document.getElementById('artworkModalTitle').textContent = 'Adicionar Nova Obra';
+            document.getElementById('artworkForm').reset();
+            document.getElementById('artworkId').value = '';
+            
+            const artworkModal = new bootstrap.Modal(document.getElementById('artworkModal'));
+            artworkModal.show();
+        }
+
+        // Editar obra
+        async function editArtwork(id) {
+            try {
+                const { data: artwork, error } = await supabase
+                    .from('artworks')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+
+                if (error) {
+                    log(`Erro ao carregar obra para edição: ${error.message}`, 'error');
+                    return;
+                }
+
+                document.getElementById('artworkModalTitle').textContent = 'Editar Obra';
+                document.getElementById('artworkId').value = artwork.id;
+                document.getElementById('artworkTitle').value = artwork.title;
+                document.getElementById('artworkDescription').value = artwork.description || '';
+                document.getElementById('artworkImageUrl').value = artwork.image_url;
+                document.getElementById('artworkAiModel').value = artwork.ai_model || '';
+                document.getElementById('artworkPrompt').value = artwork.ai_prompt || '';
+                document.getElementById('artworkAccessTier').value = artwork.access_tier;
+                document.getElementById('artworkPrice').value = artwork.price_per_view || '1.00';
+                document.getElementById('artworkPublished').checked = artwork.status === 'published';
+
+                const artworkModal = new bootstrap.Modal(document.getElementById('artworkModal'));
+                artworkModal.show();
+            } catch (err) {
+                log(`Erro ao editar obra: ${err.message}`, 'error');
+            }
+        }
+
+        // Salvar obra (criar ou atualizar)
+        async function saveArtwork() {
+            const id = document.getElementById('artworkId').value;
+            const title = document.getElementById('artworkTitle').value;
+            const description = document.getElementById('artworkDescription').value;
+            const imageUrl = document.getElementById('artworkImageUrl').value;
+            const aiModel = document.getElementById('artworkAiModel').value;
+            const prompt = document.getElementById('artworkPrompt').value;
+            const accessTier = document.getElementById('artworkAccessTier').value;
+            const price = document.getElementById('artworkPrice').value;
+            const published = document.getElementById('artworkPublished').checked;
+
+            const artworkData = {
+                title,
+                description,
+                image_url: imageUrl,
+                ai_model: aiModel,
+                ai_prompt: prompt,
+                access_tier: accessTier,
+                price_per_view: price,
+                status: published ? 'published' : 'draft'
+            };
+
+            try {
+                let result;
+                if (id) {
+                    // Atualizar obra existente
+                    result = await supabase
+                        .from('artworks')
+                        .update(artworkData)
+                        .eq('id', id);
+                } else {
+                    // Criar nova obra
+                    // Obter o usuário atual para ser o artista
+                    const user = await supabase.auth.getUser();
+                    if (user.data.user) {
+                        artworkData.artist_id = user.data.user.id;
+                    }
+                    result = await supabase
+                        .from('artworks')
+                        .insert([artworkData]);
+                }
+
+                if (result.error) {
+                    log(`Erro ao salvar obra: ${result.error.message}`, 'error');
+                    return;
+                }
+
+                log(`✅ Obra ${id ? 'atualizada' : 'criada'} com sucesso!`, 'success');
+                
+                // Fechar modal e recarregar dados
+                bootstrap.Modal.getInstance(document.getElementById('artworkModal')).hide();
+                loadAdminArtworks();
+                loadArtworks();
+                loadAdminStats();
+            } catch (err) {
+                log(`Erro ao salvar obra: ${err.message}`, 'error');
+            }
+        }
+
+        // Excluir obra
+        async function deleteArtwork(id) {
+            if (!confirm('Tem certeza que deseja excluir esta obra?')) {
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('artworks')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) {
+                    log(`Erro ao excluir obra: ${error.message}`, 'error');
+                    return;
+                }
+
+                log('✅ Obra excluída com sucesso!', 'success');
+                loadAdminArtworks();
+                loadArtworks();
+                loadAdminStats();
+            } catch (err) {
+                log(`Erro ao excluir obra: ${err.message}`, 'error');
+            }
+        }
+
+        // 🔐 SISTEMA DE AUTENTICAÇÃO
+
+        // Registrar novo usuário
+        async function handleRegister(email, password, fullName) {
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            full_name: fullName
+                        }
+                    }
+                });
+
+                if (error) {
+                    log(`Erro no cadastro: ${error.message}`, 'error');
+                    alert('Erro no cadastro: ' + error.message);
+                    return;
+                }
+
+                log('✅ Cadastro realizado com sucesso! Verifique seu e-mail para confirmação.', 'success');
+                alert('Cadastro realizado com sucesso! Verifique seu e-mail para confirmação.');
+                
+                // Fechar modal
+                bootstrap.Modal.getInstance(document.getElementById('registerModal')).hide();
+                
+                // Limpar formulário
+                document.getElementById('registerForm').reset();
+                
+            } catch (err) {
+                log(`Erro no cadastro: ${err.message}`, 'error');
+                alert('Erro no cadastro: ' + err.message);
+            }
+        }
+
+        // Login de usuário
+        async function handleLogin(email, password) {
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) {
+                    log(`Erro no login: ${error.message}`, 'error');
+                    alert('Erro no login: ' + error.message);
+                    return;
+                }
+
+                log('✅ Login realizado com sucesso!', 'success');
+                currentUser = data.user;
+                
+                // Atualizar UI
+                updateAuthUI();
+                
+                // Fechar modal
+                bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
+                
+                // Limpar formulário
+                document.getElementById('loginForm').reset();
+                
+            } catch (err) {
+                log(`Erro no login: ${err.message}`, 'error');
+                alert('Erro no login: ' + err.message);
+            }
+        }
+
+        // Logout
+        async function logout() {
+            try {
+                const { error } = await supabase.auth.signOut();
+                
+                if (error) {
+                    log(`Erro no logout: ${error.message}`, 'error');
+                    return;
+                }
+
+                log('✅ Logout realizado com sucesso!', 'success');
+                currentUser = null;
+                
+                // Atualizar UI
+                updateAuthUI();
+                
+            } catch (err) {
+                log(`Erro no logout: ${err.message}`, 'error');
+            }
+        }
+
+        // Atualizar UI de autenticação
+        function updateAuthUI() {
+            const authButtons = document.getElementById('auth-buttons');
+            const userMenu = document.getElementById('user-menu');
+            const userName = document.getElementById('user-name');
+
+            if (currentUser) {
+                // Usuário logado
+                authButtons.style.display = 'none';
+                userMenu.style.display = 'flex';
+                
+                // Obter nome do usuário
+                const name = currentUser.user_metadata?.full_name || currentUser.email || 'Usuário';
+                userName.textContent = name;
+                
+                log(`👤 Usuário autenticado: ${name}`, 'success');
+            } else {
+                // Usuário não logado
+                authButtons.style.display = 'flex';
+                userMenu.style.display = 'none';
+                
+                log('👤 Usuário desconectado', 'info');
+            }
+        }
+
+        // Verificar estado de autenticação ao carregar a página
+        async function checkAuthState() {
+            try {
+                const { data, error } = await supabase.auth.getUser();
+                
+                if (error) {
+                    log(`Erro ao verificar autenticação: ${error.message}`, 'error');
+                    return;
+                }
+
+                if (data.user) {
+                    currentUser = data.user;
+                    updateAuthUI();
+                }
+            } catch (err) {
+                log(`Erro ao verificar autenticação: ${err.message}`, 'error');
+            }
+        }
+
+        // Mostrar perfil do usuário
+        function showUserProfile() {
+            if (!currentUser) return;
+            
+            const user = currentUser;
+            const name = user.user_metadata?.full_name || 'Não informado';
+            const email = user.email || 'Não informado';
+            
+            alert(`Perfil do Usuário:\n\nNome: ${name}\nE-mail: ${email}\n\nFuncionalidade em desenvolvimento.`);
+        }
+
+        // Mostrar obras do usuário
+        function showUserArtworks() {
+            if (!currentUser) return;
+            
+            alert('Minhas Obras:\n\nFuncionalidade em desenvolvimento. Em breve você poderá ver e gerenciar suas obras aqui.');
+        }
+
+        // Configurar formulários
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            handleLogin(email, password);
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const fullName = document.getElementById('registerName').value;
+            handleRegister(email, password, fullName);
+        });
+
+        // Inicializar quando a página carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            log('Sistema inicializado com credenciais do Supabase', 'success');
+            log('Clique em "Testar Conexão" para verificar a configuração', 'info');
+            
+            // Testar conexão automaticamente após um delay
+            setTimeout(testConnection, 1500);
+            
+            // Verificar estado de autenticação
+            checkAuthState();
+        });
+    </script>
+</body>
+</html>
