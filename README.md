@@ -229,4 +229,4 @@ Em caso de dúvidas ou problemas:
 
 ---
 
-Desenvolvido com ❤️ usando Supabase e Bootstrap
+Desenvolvido por InNovaIdeia HTML5 js e css ,com ❤️ usando Supabase e Bootstrap
